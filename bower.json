@@ -1,0 +1,12 @@
+{
+  "name": "replicator-SpeechRecognition",
+  "version": "0.1.0",
+  "description": "Recognizes pre-programed words and short sentences to trigger actions",
+  "homepage": "",
+  "authors": [
+    "Alexander Agudelo"
+  ],
+  "main": "main.js",
+  "keywords": [],
+  "license": "MIT"
+}
