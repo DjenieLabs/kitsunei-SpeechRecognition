@@ -42,7 +42,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
       'SoundStarts', 'CommandMatch', 'ResultNoMatch'
     ];
     for(var command of this.commands){
-      inputs.push(command.name);
+      inputs.push(command.name.toLowerCase());
     }
 
     return inputs;
@@ -90,7 +90,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
         { name: "Hebrew", value: "he"}, { name: "Hungarian", value: "hu"},
         { name: "Icelandic", value: "is"}, { name: "Italian", value: "it-IT"},
         { name: "Indonesian", value: "id"}, { name: "Japanese", value: "ja"},
-        { name: "Korean", vale: "ko"}, { name: "Latin", value: "la"},
+        { name: "Korean", value: "ko"}, { name: "Latin", value: "la"},
         { name: "Mandarin Chinese", value: "zh-CN"}, { name: "Traditional Taiwan", value: "zh-TW"},
         { name: "Simplified China", value: "zh-CN ?"}, { name: "Simplified Hong Kong", value: "zh-HK"},
         { name: "Yue Chinese (Traditional Hong Kong)", value: "zh-yue"}, { name: "Malaysian", value: "ms-MY"},
@@ -116,15 +116,8 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     // Load previously stored settings
     if(this.storedSettings && this.storedSettings.commands){
       this.commands = this.storedSettings.commands;
-      this.languages.items.some(function(item){
-        if(item.value == that.storedSettings.language){
-          that.languages.default = item.name;
-          item.selected = true;
-          return true;
-        }else{
-          item.selected = false;
-        }
-      });
+      // Update the languages structure and select the given one
+      updateLanguage.call(that, that.storedSettings.language);
     }else{
       // Stores the list of codes
       this.commands = [];
@@ -139,7 +132,9 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
       that.annyang.addCallback("soundstart", SpeechRecognition.onSoundStarts, that);
       that.annyang.addCallback("resultMatch", SpeechRecognition.onResultMatch, that);
       that.annyang.addCallback("resultNoMatch", SpeechRecognition.onResultNoMatch, that);
-
+      that.annyang.addCallback('error', function(e) {
+        console.log("Error: ", e);
+      });
       that.languages.items.some(function(item){
         if(item.selected == true){
           that.annyang.setLanguage(item.value);
@@ -147,9 +142,6 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
         }
       });
 
-
-      // test command
-      that.annyang.addCommands({"Testing": function(a, b, c){ console.log(a, b, c); } });
 
       that.annyang.start();
 
@@ -165,7 +157,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
 
   /**
    * When hasMissingProperties returns <true>
-   * the properties windown will be open automatically after clicking the
+   * the properties window will be open automatically after clicking the
    * canvas block
    */
   SpeechRecognition.hasMissingProperties = function() {
@@ -209,10 +201,10 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
 
   /**
    * Triggered when the user clicks on a block.
-   * The interace builder is automatically opened.
+   * The interface builder is automatically opened.
    * Here we must load the elements.
    * NOTE: This is called with the scope set to the
-   * Block object, to emailsess this modules properties
+   * Block object, to access this modules properties
    * use SpeechRecognition or this.controller
    */
   SpeechRecognition.onClick = function(){
@@ -261,8 +253,44 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
    * Triggered when no command was recognized.
    */
   SpeechRecognition.onResultNoMatch = function(possiblePhrases){
-    console.log("No match!");
-    this.processData({resultnomatch: true});
+    // NOTE: For some reason after new commands are added the
+    // library stops recognizing commands and trigger the noMatch
+    // event. As workaround we traverse our list of command and
+    // perform the comparison ourselves.
+    var that = this;
+    var res = possiblePhrases.some(function(phrase){
+      for(var cmd of that.commands){
+        if(cmd.name.toLowerCase() == phrase.trim().toLowerCase()){
+          console.log("Command recognized: ", cmd.name);
+          // Send data to logic maker for processing
+          that.processData({commandmatch: true});
+          var obj = {};
+          obj[cmd.name.toLowerCase()] = true;
+          that.processData(obj);
+          return true;
+        }
+      }
+    });
+    
+    if(!res){
+      console.log("No match!");
+      this.processData({resultnomatch: true});
+    }
+  };
+
+  // updates the local languages array 
+  // and selects as default the one that has the
+  // given value.
+  function updateLanguage(value){
+    var that = this;
+    this.languages.items.forEach(function(item){
+      if(item.value == value){
+        that.languages.default = item.name;
+        item.selected = true;
+      }else{
+        item.selected = false;
+      }
+    });
   };
 
   // Read the current interface and assign the right
@@ -272,8 +300,10 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     var that = this;
     // Get back the selected language
     var values = easy.getValues();
-    console.log("Values: ", values);
     that.annyang.setLanguage(values.Languages);
+    updateLanguage.call(this, values.Languages);
+
+    // Update my languages list
     var cmdList = {};
     this.myPropertiesWindow.find(".record-row").each(function(el){
       var index = _getItemFromIndex(that.commands, $(this).attr("data-index"));
@@ -283,8 +313,8 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     });
 
     if(Object.keys(cmdList).length){
-      // this.annyang.abort();
-      this.annyang.init(cmdList, true);
+      // this.annyang.removeCommands();
+      this.annyang.addCommands(cmdList);
     }
   }
 
