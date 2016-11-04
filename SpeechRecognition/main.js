@@ -274,20 +274,17 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     var values = easy.getValues();
     console.log("Values: ", values);
     that.annyang.setLanguage(values.Languages);
-    var cmdList = [];
+    var cmdList = {};
     this.myPropertiesWindow.find(".record-row").each(function(el){
       var index = _getItemFromIndex(that.commands, $(this).attr("data-index"));
       var cmd = $(this).find("input").val();
       that.commands[index].name = cmd;
-      var obj = {};
-      obj[cmd] = function(one, two, three){
-        console.log("One: ", one, "Two: ", two, "Three: ", three);
-      };
-      cmdList.push(obj);
+      cmdList['"' + cmd + '"']  = function(){};
     });
 
-    if(this.commands.length){
-     this.annyang.init(cmdList, true);
+    if(Object.keys(cmdList).length){
+      // this.annyang.abort();
+      this.annyang.init(cmdList, true);
     }
   }
 
