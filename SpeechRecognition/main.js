@@ -194,10 +194,29 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     }
   };
 
-  // TODO: Move this to the block controller
-  function save() {
+  /**
+   * Intercepts the properties panel closing action.
+   * Return "false" to abort the action.
+   * NOTE: Settings Load/Saving will atomatically
+   * stop re-trying if the event propagates.
+   */
+  SpeechRecognition.onCancelProperties = function(){
+    console.log("Cancelling Properties");
+  };
+
+  /**
+   * Intercepts the properties panel save action.
+   * You must call the save method directly for the
+   * new values to be sent to hardware blocks.
+   * @param settings is an object with the values
+   * of the elements rendered in the interface.
+   * NOTE: For the settings object to contain anything
+   * you MUST have rendered the panel using standard
+   * ways (easy.showBaseSettings and easy.renderCustomSettings)
+   */
+  SpeechRecognition.onSaveProperties = function(settings){
     readInterfaceItems.call(this);
-  }
+  };
 
   /**
    * Triggered when the user clicks on a block.
@@ -208,8 +227,6 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
    * use SpeechRecognition or this.controller
    */
   SpeechRecognition.onClick = function(){
-    Ppanel.stopLoading();
-    Ppanel.onSave(save.bind(this));
     renderSettingsWindow.call(this);
   };
 
@@ -247,6 +264,16 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     var data = {};
     data[matchedCommand] = true;
     this.processData(data);
+  };
+
+  /**
+   * Triggered when the block is about to be removed from the canvas
+   */
+  SpeechRecognition.onBeforeDestroy = function(){
+    // Unload the library
+    this.annyang.abort();
+    this.annyang = undefined;
+    annyang = undefined;
   };
 
   /**
