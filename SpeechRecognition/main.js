@@ -37,6 +37,8 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     return [];
   };
 
+  SpeechRecognition.isInputBlock = true;
+
   SpeechRecognition.getInputs = function() {
     var inputs = [
       'SoundStarts', 'CommandMatch', 'ResultNoMatch'
