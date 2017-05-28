@@ -129,7 +129,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     require([libPath+'js/annyang.min.js'], function(annyang){
       // Make it global
       that.annyang = annyang;
-      that .annyang.debug(true);
+      //that.annyang.debug(true);
 
       that.annyang.addCallback("soundstart", SpeechRecognition.onSoundStarts, that);
       that.annyang.addCallback("resultMatch", SpeechRecognition.onResultMatch, that);
@@ -138,16 +138,15 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
         console.log("Error: ", e);
       });
       that.languages.items.some(function(item){
-        if(item.selected == true){
+        if(item.selected === true){
           that.annyang.setLanguage(item.value);
-          return item.selected;
+          //return item.selected;
         }
       });
 
-
-      that.annyang.start();
-
-      console.log("Voice Recognition lib loaded! ");
+      that.annyang_started = false;
+      //that.annyang.start();
+      //console.log("Voice Recognition lib loaded! ");
     });
 
     // Load the properties template
@@ -266,6 +265,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     var data = {};
     data[matchedCommand] = true;
     this.processData(data);
+    //this.dispatchDataFeed(data);
   };
 
   /**
@@ -320,7 +320,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
         item.selected = false;
       }
     });
-  };
+  }
 
   // Read the current interface and assign the right
   // DOM object to the array instances.
@@ -385,12 +385,36 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
       deleteItem.call(that, this);
     });
 
+    this.myPropertiesWindow.find("#btResume").click(function () {
+      if ( !that.annyang_started ) {
+        that.annyang.start();
+        that.annyang_started = true;
+        console.log("Voice Recognition lib resumed! ");
+      }
+      that.myPropertiesWindow.find("#btPause").show();
+      that.myPropertiesWindow.find("#btResume").hide();
+    });
+
+    this.myPropertiesWindow.find("#btPause").click(function () {
+      if ( that.annyang_started ) {
+        that.annyang.abort();
+        that.annyang_started = false;
+        console.log("Voice Recognition lib paused! ");
+      }
+      that.myPropertiesWindow.find("#btPause").hide();
+      that.myPropertiesWindow.find("#btResume").show();
+    });
+
+    if ( !this.annyang_started ) {
+      this.myPropertiesWindow.find("#btPause").hide();
+    }
+
     // Init dropdown component
     this.myPropertiesWindow.find(".dropdown").dropdown();
     // Display elements
     easy.displayCustomSettings(this.myPropertiesWindow, true);
 
-  };
+  }
 
   /**
    * Parent is send new data (using outputs).
