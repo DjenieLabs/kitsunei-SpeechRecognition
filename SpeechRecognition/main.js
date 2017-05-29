@@ -406,6 +406,8 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
 
     if ( !this.annyang_started ) {
       this.myPropertiesWindow.find("#btPause").hide();
+    } else {
+      this.myPropertiesWindow.find("#btResume").hide();
     }
 
     // Init dropdown component
