@@ -132,7 +132,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
       //that.annyang.debug(true);
 
       that.annyang.addCallback("soundstart", SpeechRecognition.onSoundStarts, that);
-      that.annyang.addCallback("resultMatch", SpeechRecognition.onResultMatch, that);
+      //that.annyang.addCallback("resultMatch", SpeechRecognition.onResultMatch, that);
       that.annyang.addCallback("resultNoMatch", SpeechRecognition.onResultNoMatch, that);
       that.annyang.addCallback('error', function(e) {
         console.log("Error: ", e);
@@ -257,7 +257,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
    * Triggered when a command has been successfully
    * recognized
    */
-  SpeechRecognition.onResultMatch = function(phrase, matchedCommand, alternativePhrases){
+  /*SpeechRecognition.onResultMatch = function(phrase, matchedCommand, alternativePhrases){
     console.log("Phrase: ", phrase, "Matched Command: ", matchedCommand, "AlternativePhrases: ", alternativePhrases);
     // Send data to logic maker for processing
     this.processData({commandmatch: true});
@@ -266,7 +266,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
     data[matchedCommand] = true;
     this.processData(data);
     //this.dispatchDataFeed(data);
-  };
+  };*/
 
   /**
    * Triggered when the block is about to be removed from the canvas
@@ -338,7 +338,7 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
       var index = _getItemFromIndex(that.commands, $(this).attr("data-index"));
       var cmd = $(this).find("input").val();
       that.commands[index].name = cmd;
-      cmdList['"' + cmd + '"']  = function(){};
+      cmdList[cmd]  = onCommandRecognized.bind(that, cmd); //function(){};
     });
 
     if(Object.keys(cmdList).length){
@@ -364,7 +364,6 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
 
     // add an empty slot
     this.commands.push({index: this.commands.length, name: "Add Command"});
-
 
     renderSettingsWindow.call(this);
   }
@@ -416,11 +415,21 @@ define(['HubLink', 'RIB', 'PropertiesPanel', 'Easy'], function(Hub, RIB, Ppanel,
 
   }
 
+  function onCommandRecognized(tag, value){
+    var cmdStr = tag.split(":")[0].trim().toLowerCase();
+    // send the event to the basic input
+    this.processData({commandmatch: true});
+
+    // send the event to the user's input
+    var obj = {};
+    obj[tag.toLowerCase().trim()] = value;
+    this.processData(obj);
+  }
   /**
    * Parent is send new data (using outputs).
    */
   SpeechRecognition.onNewData = function() {};
 
-
   return SpeechRecognition;
+
 });
